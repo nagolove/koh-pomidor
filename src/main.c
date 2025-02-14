@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "koh_timerman.h"
-
+#include "beep2.h"
 // }}}
 
 Sound snd_beep;
@@ -51,6 +51,7 @@ static void tmr_on_stop(struct Timer *tmr);
 
 static void init() {
     stop = false;
+    PlaySound(snd_beep);
     timerman_add(tm, (TimerDef) {
         .duration = times[i],
         .on_update = tmr_on_update,
@@ -73,8 +74,6 @@ static bool tmr_on_update(struct Timer *tmr) {
 }
 static void update(void) {
     if (IsKeyPressed(KEY_SPACE)) {
-        /*trace("update: SPACE pressed\n");*/
-        PlaySound(snd_beep);
         stop = true;
     }
 
@@ -119,11 +118,16 @@ int main(int argc, char **argv) {
 
     InitAudioDevice();
 
-    snd_beep = LoadSound("assets/beepgen.wav");
+    Wave wav = LoadWaveFromMemory(
+        ".wav", assets_beepgen_wav, assets_beepgen_wav_len
+    );
+
+    snd_beep = LoadSoundFromWave(wav);
+    UnloadWave(wav);
 
     koh_render_init();
 
-    tm = timerman_new(40, "timers");
+    tm = timerman_new(2, "timers");
     init();
 
     SetTargetFPS(120);
