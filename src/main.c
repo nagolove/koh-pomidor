@@ -35,15 +35,25 @@ static Camera2D cam = {
 };
 TimerMan *tm = NULL;
 const int scr_w = 300, scr_h = 60;
-float times[] = {
+
+float times1[2] = {
+    25. * 60., 
+    5 * 60.
+}, times2[2] = {
     25. * 60., 
     5 * 60.
 };
+
+float *next_times[2] = {
+    times1, 
+    times2,
+};
+
 Color colors[] = {
     RED,
     GREEN,
 };
-int i = 0;
+int i = 0, times_i = 0;
 bool stop = false;
 
 static bool tmr_on_update(struct Timer *tmr);
@@ -53,7 +63,7 @@ static void init() {
     stop = false;
     PlaySound(snd_beep);
     timerman_add(tm, (TimerDef) {
-        .duration = times[i],
+        .duration = next_times[times_i][i],
         .on_update = tmr_on_update,
         .on_stop = tmr_on_stop,
     });
@@ -61,6 +71,7 @@ static void init() {
 
 static void tmr_on_stop(struct Timer *tmr) {
     i = (i + 1) % 2;
+    times_i = (times_i + 1) % 2;
     init();
     /*trace("tmr_on_stop: i %d\n", i);*/
 }
@@ -72,9 +83,70 @@ static bool tmr_on_update(struct Timer *tmr) {
     DrawRectangleLinesEx((Rectangle) { 0., 0, scr_w, scr_h, }, thick, BLACK);
     return stop;
 }
+
+union TmrData {
+    float t;
+    void *p;
+};
+
+static const float next_timer_duration = 5.f;
+static bool stop_next = false;
+
+static bool tmr_on_update_next(struct Timer *tmr) {
+    char buf[128] = {};
+    union TmrData u = { .p = tmr->data, };
+    float duration = u.t;
+
+    //printf("tmr_on_update_next: duration %f\n", duration);
+
+    sprintf(buf, "next - %.0f minutes", duration / 60.);
+    const int font_size = 30;
+    Vector2 m = MeasureTextEx(GetFontDefault(), buf, font_size, 0);
+    Vector2 pos = {
+        (scr_w - m.x) / 2.,
+        (scr_h - m.y) / 2.,
+    };
+    DrawTextEx(GetFontDefault(), buf, pos, font_size, 0., BLACK);
+    return stop_next;
+}
+
+void next_timer(int i, float sec) {
+    assert(i == 1 || i == 0);
+    int next_times_i = (times_i + 1) % 2;
+
+    stop_next = false;
+    next_times[next_times_i][i] = sec;
+    union TmrData u = { .t = sec };
+    timerman_add(tm, (TimerDef) {
+        .duration = next_timer_duration,
+        .on_update = tmr_on_update_next,
+        .data = u.p,
+    });
+}
+
 static void update(void) {
+
     if (IsKeyPressed(KEY_SPACE)) {
         stop = true;
+    }
+
+    if (IsKeyPressed(KEY_ONE)) {
+        next_timer(0, 10. * 60);
+    }
+    if (IsKeyPressed(KEY_TWO)) {
+        next_timer(0, 20. * 60);
+    }
+    if (IsKeyPressed(KEY_THREE)) {
+        next_timer(0, 25. * 60);
+    }
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_ONE)) {
+        next_timer(1, 5. * 60);
+    }
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_TWO)) {
+        next_timer(1, 10. * 60);
+    }
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_THREE)) {
+        next_timer(1, 15. * 60);
     }
 
     BeginDrawing();
@@ -127,7 +199,7 @@ int main(int argc, char **argv) {
 
     koh_render_init();
 
-    tm = timerman_new(2, "timers");
+    tm = timerman_new(20, "timers");
     init();
 
     SetTargetFPS(120);
