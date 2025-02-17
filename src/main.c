@@ -34,7 +34,7 @@ static Camera2D cam = {
     .zoom = 1.,
 };
 TimerMan *tm = NULL;
-const int scr_w = 300, scr_h = 60;
+const int scr_w = 1920, scr_h = 30;
 
 float times1[2] = {
     25. * 60., 
