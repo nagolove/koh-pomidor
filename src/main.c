@@ -54,7 +54,8 @@ Color colors[] = {
     GREEN,
 };
 int i = 0, times_i = 0;
-bool stop = false;
+bool stop = false,
+     is_sleep = false;
 
 static bool tmr_on_update(struct Timer *tmr);
 static void tmr_on_stop(struct Timer *tmr);
@@ -125,6 +126,11 @@ void next_timer(int i, float sec) {
 }
 
 static void update(void) {
+
+    if (IsKeyPressed(KEY_S)) {
+        is_sleep = !is_sleep;
+        timerman_pause(tm, is_sleep);
+    }
 
     if (IsKeyPressed(KEY_SPACE)) {
         stop = true;
